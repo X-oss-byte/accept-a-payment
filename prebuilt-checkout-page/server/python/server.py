@@ -60,14 +60,16 @@ def create_checkout_session():
         # For full details see https:#stripe.com/docs/api/checkout/sessions/create
         # ?session_id={CHECKOUT_SESSION_ID} means the redirect will have the session ID set as a query param
         checkout_session = stripe.checkout.Session.create(
-            success_url=domain_url + '/success.html?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url=domain_url + '/canceled.html',
+            success_url=domain_url
+            + '/success.html?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=f'{domain_url}/canceled.html',
             mode='payment',
-            # automatic_tax={'enabled': True},
-            line_items=[{
-                'price': os.getenv('PRICE'),
-                'quantity': 1,
-            }]
+            line_items=[
+                {
+                    'price': os.getenv('PRICE'),
+                    'quantity': 1,
+                }
+            ],
         )
         return redirect(checkout_session.url, code=303)
     except Exception as e:
@@ -97,7 +99,7 @@ def webhook_received():
         event_type = request_data['type']
     data_object = data['object']
 
-    print('event ' + event_type)
+    print(f'event {event_type}')
 
     if event_type == 'checkout.session.completed':
         print('🔔 Payment succeeded!')
