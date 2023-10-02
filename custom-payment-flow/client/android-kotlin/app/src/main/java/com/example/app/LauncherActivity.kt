@@ -16,7 +16,7 @@ import java.io.IOException
 import com.stripe.android.PaymentConfiguration
 
 // 10.0.2.2 is the Android emulator's alias to localhost
-val BackendUrl = "http://10.0.2.2:4242/"
+val BackendUrl = BuildConfig.BACKEND_URL
 
 class LauncherActivity : AppCompatActivity() {
 
@@ -88,7 +88,9 @@ class LauncherActivity : AppCompatActivity() {
 
         private val items = listOf(
             PaymentMethodItem(activity.getString(R.string.card_item), CardActivity::class.java),
-            PaymentMethodItem(activity.getString(R.string.alipay_item), AlipayActivity::class.java)
+            PaymentMethodItem(activity.getString(R.string.alipay_item), AlipayActivity::class.java),
+            PaymentMethodItem(activity.getString(R.string.afterpay_clearpay_item), AfterpayClearpayActivity::class.java),
+            PaymentMethodItem(activity.getString(R.string.klarna_item), KlarnaActivity::class.java)
         )
 
         private data class PaymentMethodItem constructor(val text: String, val activityClass: Class<*>)

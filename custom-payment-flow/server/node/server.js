@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const app = express();
 const {resolve} = require('path');
 // Replace if using a different env file or config
@@ -25,6 +26,9 @@ app.use(
     },
   })
 );
+app.use(cors({
+  origin: 'http://localhost:3000'
+}));
 
 app.get('/', (req, res) => {
   const path = resolve(process.env.STATIC_DIR + '/index.html');
@@ -38,17 +42,19 @@ app.get('/config', (req, res) => {
 });
 
 app.post('/create-payment-intent', async (req, res) => {
-  const {paymentMethodType, currency} = req.body;
+  const {paymentMethodType, currency,paymentMethodOptions} = req.body;
 
   // Each payment method type has support for different currencies. In order to
   // support many payment method types and several currencies, this server
   // endpoint accepts both the payment method type and the currency as
-  // parameters.
+  // parameters. To get compatible payment method types, pass 
+  // `automatic_payment_methods[enabled]=true` and enable types in your dashboard 
+  // at https://dashboard.stripe.com/settings/payment_methods.
   //
-  // Some example payment method types include `card`, `ideal`, and `alipay`.
+  // Some example payment method types include `card`, `ideal`, and `link`.
   const params = {
-    payment_method_types: [paymentMethodType],
-    amount: 1999,
+    payment_method_types: paymentMethodType === 'link' ? ['link', 'card'] : [paymentMethodType],
+    amount: 5999,
     currency: currency,
   }
 
@@ -63,6 +69,29 @@ app.post('/create-payment-intent', async (req, res) => {
         },
       },
     }
+  } else if (paymentMethodType === 'konbini') {
+    /**
+     * Default value of the payment_method_options
+     */
+    params.payment_method_options = {
+      konbini: {
+        product_description: 'Tシャツ',
+        expires_after_days: 3,
+      },
+    }
+  } else if (paymentMethodType === 'customer_balance') {
+    params.payment_method_data = {
+      type: 'customer_balance',
+    }
+    params.confirm = true
+    params.customer = req.body.customerId || await stripe.customers.create().then(data => data.id)
+  }
+
+  /**
+   * If API given this data, we can overwride it
+   */
+  if (paymentMethodOptions) {
+    params.payment_method_options = paymentMethodOptions
   }
 
   // Create a PaymentIntent with the amount, currency, and a payment method type.
@@ -76,6 +105,7 @@ app.post('/create-payment-intent', async (req, res) => {
     // Send publishable key and PaymentIntent details to client
     res.send({
       clientSecret: paymentIntent.client_secret,
+      nextAction: paymentIntent.next_action,
     });
   } catch (e) {
     return res.status(400).send({
@@ -84,6 +114,22 @@ app.post('/create-payment-intent', async (req, res) => {
       },
     });
   }
+});
+
+app.get('/payment/next', async (req, res) => {
+  const intent = await stripe.paymentIntents.retrieve(
+    req.query.payment_intent,
+    {
+      expand: ['payment_method'],
+    }
+  );
+
+  res.redirect(`/success?payment_intent_client_secret=${intent.client_secret}`);
+});
+
+app.get('/success', async (req, res) => {
+  const path = resolve(process.env.STATIC_DIR + '/success.html');
+  res.sendFile(path);
 });
 
 // Expose a endpoint as a webhook handler for asynchronous events.

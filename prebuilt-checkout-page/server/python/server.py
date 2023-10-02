@@ -1,4 +1,4 @@
-#! /usr/bin/env python3.6
+#! /usr/bin/env python3.8
 
 """
 server.py
@@ -41,7 +41,6 @@ app = Flask(__name__, static_folder=static_dir,
 def get_example():
     return render_template('index.html')
 
-
 # Fetch the Checkout Session to display the JSON result on the success page
 @app.route('/checkout-session', methods=['GET'])
 def get_checkout_session():
@@ -63,7 +62,6 @@ def create_checkout_session():
         checkout_session = stripe.checkout.Session.create(
             success_url=domain_url + '/success.html?session_id={CHECKOUT_SESSION_ID}',
             cancel_url=domain_url + '/canceled.html',
-            payment_method_types=(os.getenv('PAYMENT_METHOD_TYPES') or 'card').split(','),
             mode='payment',
             # automatic_tax={'enabled': True},
             line_items=[{

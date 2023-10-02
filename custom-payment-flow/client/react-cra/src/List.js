@@ -1,6 +1,4 @@
 import React from 'react';
-import {withRouter} from 'react-router-dom';
-
 // List of payment method types with links to each implementation.
 const List = () => {
   const CARDS = 'Cards';
@@ -29,8 +27,8 @@ const List = () => {
       category: CARDS,
     },
     {
-      path: 'ach',
-      name: 'ACH debits',
+      path: 'us-bank-account-debit',
+      name: 'US bank account - ACH debits',
       docs: 'https://stripe.com/docs/ach',
       fact_sheet:
         'https://stripe.com/payments/payment-methods-guide#ach-debits',
@@ -134,6 +132,12 @@ const List = () => {
       category: BANK_TRANSFERS,
     },
     {
+      path: 'jp-bank-transfer',
+      name: 'JP Bank transfer(銀行振込)',
+      docs: 'https://stripe.com/docs/payments/bank-transfers',
+      category: BANK_TRANSFERS,
+    },
+    {
       path: 'afterpay-clearpay',
       name: 'Afterpay / Clearpay',
       docs: 'https://stripe.com/docs/payments/afterpay-clearpay',
@@ -159,6 +163,13 @@ const List = () => {
       name: 'OXXO',
       docs: 'https://stripe.com/docs/payments/oxxo',
       fact_sheet: 'https://stripe.com/payments/payment-methods-guide#oxxo',
+      category: VOUCHERS,
+    },
+    {
+      path: 'konbini',
+      name: 'Konbini',
+      docs: 'https://stripe.com/docs/payments/konbini',
+      fact_sheet: 'https://stripe.com/payments/payment-methods-guide',
       category: VOUCHERS,
     },
     {
@@ -234,4 +245,4 @@ const List = () => {
   );
 };
 
-export default withRouter(List);
+export default List;

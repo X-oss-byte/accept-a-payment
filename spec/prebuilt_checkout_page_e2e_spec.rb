@@ -2,7 +2,7 @@ require 'capybara_support'
 
 RSpec.describe 'Custom payment flow', type: :system do
   before do
-    visit server_url('/')
+    visit app_url('/')
   end
 
   example 'happy path' do
@@ -16,17 +16,20 @@ RSpec.describe 'Custom payment flow', type: :system do
     select 'United States', from: 'billingCountry'
     fill_in 'billingPostalCode', with: '10000'
 
-    click_on 'Pay €10.00'
+    # in case it checked by default
+    uncheck 'enableStripePass', allow_label_click: true
+
+    click_on 'Pay'
 
     expect(page).to have_content 'Your payment succeeded'
     expect(page).to have_content '"amount_total": 1000'
   end
 
   example 'Cancel a payment' do
-    visit server_url('/')
+    visit app_url('/')
 
     click_on 'Buy'
-    click_on 'Previous page'
+    find('a[href$="/canceled.html"]').click
 
     expect(page).to have_content 'Your payment was canceled'
   end

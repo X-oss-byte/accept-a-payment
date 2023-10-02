@@ -5,7 +5,8 @@ require 'capybara-screenshot/rspec'
 Capybara.server_host = Socket.ip_address_list.detect(&:ipv4_private?).ip_address
 
 Capybara.register_driver :chrome do |app|
-  opts = {browser: :chrome, url: ENV.fetch('SELENIUM_URL', 'http://selenium:4444/wd/hub')}
+  browser_options = Selenium::WebDriver::Chrome::Options.new
+  opts = {browser: :remote, options: browser_options, url: ENV.fetch('SELENIUM_URL', 'http://selenium:4444/wd/hub')}
   Capybara::Selenium::Driver.new(app, **opts)
 end
 
@@ -20,10 +21,10 @@ Capybara.enable_aria_label = true
 Capybara.save_path = 'tmp/capybara'
 
 module CapybaraHelpers
-  SERVER_URL = ENV.fetch('SERVER_URL', 'http://web:4242')
+  APP_URL = ENV.fetch('DOMAIN', 'http://frontend:3000')
 
-  def server_url(path)
-    url = URI(SERVER_URL)
+  def app_url(path)
+    url = URI(APP_URL)
     url.path = path
     url
   end

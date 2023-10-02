@@ -1,5 +1,6 @@
 import env from "dotenv";
 import path from "path";
+import cors from "cors";
 // Replace if using a different env file or config.
 env.config({ path: "./.env" });
 
@@ -8,7 +9,7 @@ import express from "express";
 
 import Stripe from "stripe";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2020-08-27",
+  apiVersion: "2022-11-15",
   appInfo: { // For sample support and debugging, not required for production:
     name: "stripe-samples/accept-a-payment",
     url: "https://github.com/stripe-samples",
@@ -34,6 +35,9 @@ app.use(
     }
   }
 );
+app.use(cors({
+  origin: 'http://localhost:3000'
+}));
 
 app.get("/", (_: express.Request, res: express.Response): void => {
   // Serve checkout page.
@@ -51,12 +55,20 @@ app.get("/config", (_: express.Request, res: express.Response): void => {
 app.post(
   "/create-payment-intent",
   async (req: express.Request, res: express.Response): Promise<void> => {
-    const { currency, paymentMethodType }: { currency: string, paymentMethodType: string } = req.body;
+    const { currency, paymentMethodType, paymentMethodOptions }: { currency: string, paymentMethodType: string, paymentMethodOptions?: object  } = req.body;
     // Create a PaymentIntent with the order amount and currency.
     const params: Stripe.PaymentIntentCreateParams = {
-      amount: 1999,
+      amount: 5999,
       currency,
-      payment_method_types: [paymentMethodType],
+      // Each payment method type has support for different currencies. In order to
+      // support many payment method types and several currencies, this server
+      // endpoint accepts both the payment method type and the currency as
+      // parameters. To get compatible payment method types, pass 
+      // `automatic_payment_methods[enabled]=true` and enable types in your dashboard 
+      // at https://dashboard.stripe.com/settings/payment_methods.
+      //
+      // Some example payment method types include `card`, `ideal`, and `link`.
+      payment_method_types: paymentMethodType === 'link' ? ['link', 'card'] : [paymentMethodType],
     };
 
     // If this is for an ACSS payment, we add payment_method_options to create
@@ -70,6 +82,19 @@ app.post(
           },
         },
       };
+    } else if (paymentMethodType === 'customer_balance') {
+      params.payment_method_data = {
+        type: 'customer_balance',
+      } as any
+      params.confirm = true
+      params.customer = req.body.customerId || await stripe.customers.create().then(data => data.id)
+    }
+
+    /**
+     * If API given this data, we can overwride it
+     */
+    if (paymentMethodOptions) {
+      params.payment_method_options = paymentMethodOptions
     }
 
     try {
@@ -80,6 +105,7 @@ app.post(
       // Send publishable key and PaymentIntent client_secret to client.
       res.send({
         clientSecret: paymentIntent.client_secret,
+        nextAction: paymentIntent.next_action,
       });
     } catch (e) {
       res.status(400).send({
@@ -90,6 +116,23 @@ app.post(
     }
   }
 );
+
+app.get('/payment/next', async (req, res) => {
+  const paymentIntent : any = req.query.payment_intent; 
+  const intent  = await stripe.paymentIntents.retrieve(
+    paymentIntent,
+    {
+      expand: ['payment_method'],
+    }
+  );
+  
+  res.redirect(`/success?payment_intent_client_secret=${intent.client_secret}`);
+});
+
+app.get('/success', async (req, res) => {
+  const path = resolve(process.env.STATIC_DIR + '/success.html');
+  res.sendFile(path);
+});
 
 // Expose a endpoint as a webhook handler for asynchronous events.
 // Configure your webhook in the stripe developer dashboard:

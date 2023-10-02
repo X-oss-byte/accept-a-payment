@@ -1,5 +1,6 @@
 require 'stripe'
 require 'sinatra'
+require 'sinatra/reloader'
 require 'dotenv'
 require './config_helper.rb'
 
@@ -39,14 +40,16 @@ post '/create-payment-intent' do
   # Each payment method type has support for different currencies. In order to
   # support many payment method types and several currencies, this server
   # endpoint accepts both the payment method type and the currency as
-  # parameters.
-  #
-  # Some example payment method types include `card`, `ideal`, and `alipay`.
+  # parameters. To get compatible payment method types, pass 
+  # `automatic_payment_methods[enabled]=true` and enable types in your dashboard 
+  # at https://dashboard.stripe.com/settings/payment_methods.
+  
+  # Some example payment method types include `card`, `ideal`, and `link`.
   payment_method_type = data['paymentMethodType']
   currency = data['currency']
   params = {
-    payment_method_types: [payment_method_type],
-    amount: 1999, # Charge the customer 19.99 in the given currency.
+    payment_method_types: payment_method_type == "link" ? ["link", "card"] : [payment_method_type],
+    amount: 5999, # Charge the customer 59.99 in the given currency.
     currency: currency
   }
 
@@ -86,6 +89,18 @@ post '/create-payment-intent' do
   {
     clientSecret: payment_intent.client_secret,
   }.to_json
+end
+
+get '/payment/next' do
+  content_type 'application/json'
+  payment_intent = params[:payment_intent]
+  intent = Stripe::PaymentIntent.retrieve(payment_intent)
+  redirect "/success?payment_intent_client_secret=#{intent.client_secret}"
+end
+
+get '/success' do
+  content_type 'text/html'
+  send_file File.join(settings.public_folder, 'success.html')
 end
 
 post '/webhook' do

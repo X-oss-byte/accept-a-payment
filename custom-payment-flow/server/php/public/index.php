@@ -19,6 +19,13 @@
         </li>
       </ul>
 
+      <h3>Link</h3>
+      <ul>
+        <li>
+          <a href="/link.php">Link</a>
+        </li>
+      </ul>
+
       <h3>Bank debits</h3>
       <ul>
         <li>ACH Direct Debit</li>
@@ -58,6 +65,7 @@
       <ul>
         <li><a href="/boleto.php">Boleto</a></li>
         <li><a href="/oxxo.php">OXXO</a></li>
+        <li><a href="/konbini.php">Konbini(コンビニ決済)</a></li>
       </ul>
 
       <h3>Wallets</h3>
